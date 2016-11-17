@@ -34,6 +34,7 @@ import Network.Gitit.Layout
 import Network.Gitit.Server
 import Network.Gitit.Util
 import Network.Gitit.Authentication.Github
+import Network.Gitit.Authentication.LDAP (authUserLDAP)
 import Network.Captcha.ReCaptcha (captchaFields, validateCaptcha)
 import Text.XHtml hiding ( (</>), dir, method, password, rev )
 import qualified Text.XHtml as X ( password )
@@ -378,8 +379,11 @@ loginUser params = do
   let uname = pUsername params
   let pword = pPassword params
   let destination = pDestination params
-  allowed <- authUser uname pword
   cfg <- getConfig
+  let authBackend' = authBackend cfg
+  allowed <- (case authBackend' of
+                 FileBackend -> authUser
+                 LDAPBackend -> authUserLDAP) uname pword
   if allowed
     then do
       key <- newSession (sessionData uname)

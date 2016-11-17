@@ -97,7 +97,14 @@ extractConfig cp = do
       cfShowLHSBirdTracks <- get cp "DEFAULT" "show-lhs-bird-tracks"
       cfRequireAuthentication <- get cp "DEFAULT" "require-authentication"
       cfAuthenticationMethod <- get cp "DEFAULT" "authentication-method"
+      cfAuthenticationBackend <- get cp "DEFAULT" "authentication-backend"
       cfUserFile <- get cp "DEFAULT" "user-file"
+      cfLdapHost <- get cp "LDAP" "host"
+      cfLdapPort <- get cp "LDAP" "port"
+      cfLdapBaseDN <- get cp "LDAP" "base-dn"
+      cfLdapConnDN <- get cp "LDAP" "login-dn"
+      cfLdapPassword <- get cp "LDAP" "password"
+      cfLdapFilter <- fmap Just $ get cp "LDAP" "filter"
       cfSessionTimeout <- get cp "DEFAULT" "session-timeout"
       cfTemplatesDir <- get cp "DEFAULT" "templates-dir"
       cfLogFile <- get cp "DEFAULT" "log-file"
@@ -147,6 +154,7 @@ extractConfig cp = do
 
       mimeMap' <- liftIO $ readMimeTypesFile cfMimeTypesFile
       let authMethod = map toLower cfAuthenticationMethod
+          authBackend' = map toLower cfAuthenticationBackend
       let stripTrailingSlash = reverse . dropWhile (=='/') . reverse
       let repotype' = case map toLower cfRepositoryType of
                         "git"       -> Git
@@ -184,7 +192,10 @@ extractConfig cp = do
                                        "modify"  -> ForModify
                                        "read"    -> ForRead
                                        _         -> ForModify
-
+        , authBackend = case authBackend' of
+                             "file" -> FileBackend
+                             "ldap" -> LDAPBackend
+                             _ -> FileBackend
         , authHandler          = case authMethod of
                                       "form"     -> msum formAuthHandlers
                                       "github"   -> msum $ githubAuthHandlers ghConfig
@@ -192,6 +203,12 @@ extractConfig cp = do
                                       "rpx"      -> msum rpxAuthHandlers
                                       _          -> mzero
         , userFile             = cfUserFile
+        , ldapHost             = cfLdapHost
+        , ldapPort             = cfLdapPort
+        , ldapBaseDN           = cfLdapBaseDN
+        , ldapConnDN           = cfLdapConnDN
+        , ldapPassword         = cfLdapPassword
+        , ldapFilter           = cfLdapFilter
         , sessionTimeout       = readNumber "session-timeout" cfSessionTimeout * 60  -- convert minutes -> seconds
         , templatesDir         = cfTemplatesDir
         , logFile              = cfLogFile

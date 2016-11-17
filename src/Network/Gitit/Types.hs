@@ -60,7 +60,8 @@ module Network.Gitit.Types (
                            , GithubConfig
                            , oAuth2
                            , org
-                           , githubConfig) where
+                           , githubConfig
+                           , AuthenticationBackend(..)) where
 
 import Control.Monad.Reader (ReaderT, runReaderT, mplus)
 import Control.Monad.State (StateT, runStateT, get, modify)
@@ -102,6 +103,9 @@ data MathMethod = MathML | JsMathScript | WebTeX String | RawTeX | MathJax Strin
 data AuthenticationLevel = Never | ForModify | ForRead
                   deriving (Read, Show, Eq, Ord)
 
+data AuthenticationBackend = FileBackend | LDAPBackend
+                  deriving (Read, Show, Eq, Ord)
+
 -- | Data structure for information read from config file.
 data Config = Config {
   -- | Path of repository containing filestore
@@ -124,8 +128,23 @@ data Config = Config {
   requireAuthentication :: AuthenticationLevel,
   -- | Specifies which actions require authentication.
   authHandler          :: Handler,
+  -- | Specifies which authentication backend to use.
+  authBackend          :: AuthenticationBackend,
   -- | Path of users database
   userFile             :: FilePath,
+  -- | LDAP server host name or IP
+  ldapHost             :: String,
+  -- | LDAP port
+  ldapPort             :: Int,
+  -- | LDAP base DN
+  ldapBaseDN           :: String,
+  -- | LDAP DN used to connect to the server
+  ldapConnDN           :: String,
+  -- | LDAP password used to authenticate
+  ldapPassword         :: String,
+  -- | LDAP filter expression when authenticating. A %s placeholder is substitued
+  -- | by the current user name.
+  ldapFilter           :: Maybe String,
   -- | Seconds of inactivity before session expires
   sessionTimeout       :: Int,
   -- | Directory containing page templates
